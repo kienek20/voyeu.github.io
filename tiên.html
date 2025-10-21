@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hoa hồng kết trái tim 💖</title>
+  <style>
+    html,body{margin:0;height:100%;overflow:hidden;background:#ff6ec7;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    canvas{display:block;width:100vw;height:100vh}
+
+    #start-screen{
+      position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:rgba(255,255,255,.85);backdrop-filter:blur(8px);z-index:10
+    }
+    #start-screen button{
+      padding:14px 26px;border:none;border-radius:999px;
+      background:linear-gradient(90deg,#ff6b6b,#ff3f6a);color:#fff;font-size:18px;font-weight:700;cursor:pointer;
+      box-shadow:0 8px 24px rgba(0,0,0,.18);transition:transform .2s
+    }
+    #start-screen button:hover{transform:scale(1.05)}
+    .hint{position:fixed;left:12px;bottom:12px;font-size:12px;background:rgba(255,255,255,.8);
+      border:1px solid rgba(0,0,0,.08);padding:6px 10px;border-radius:999px;backdrop-filter:blur(6px);display:none}
+
+    /* Bộ ảnh + chữ sau khi hoa kết xong */
+    #final-gallery{
+      position:fixed;inset:0;pointer-events:none;
+      z-index:6;opacity:0;transition:opacity 1.2s ease;
+    }
+    #final-gallery .slot{
+      position:fixed;border-radius:18px;overflow:hidden;
+      box-shadow:0 0 40px rgba(255,0,80,.35),0 8px 30px rgba(0,0,0,.18);
+      opacity:0;transform:translateY(8px) scale(.98);
+      transition:opacity .9s ease,transform .9s ease;
+      background:#fff;
+    }
+    #final-gallery .slot img{display:block;width:100%;height:100%;object-fit:cover}
+
+    /* Vị trí 6 khung ảnh – không đè nhau */
+    .slot1{ width:clamp(120px,18vw,240px); height:clamp(140px,22vh,280px); left:6vw;  top:8vh;  }
+    .slot2{ width:clamp(120px,18vw,240px); height:clamp(140px,22vh,280px); right:6vw; top:10vh; }
+    .slot3{ width:clamp(120px,18vw,240px); height:clamp(140px,22vh,280px); left:6vw;  bottom:10vh; }
+    .slot4{ width:clamp(120px,18vw,240px); height:clamp(140px,22vh,280px); right:6vw; bottom:12vh; }
+    .slot5{ width:clamp(140px,22vw,280px); height:clamp(140px,22vh,260px); left:50%; transform:translate(-50%,8px) scale(.98); bottom:6vh; }
+    .slot6{ width:clamp(140px,22vw,280px); height:clamp(140px,22vh,260px); left:50%; transform:translate(-50%,8px) scale(.98); top:6vh; }
+
+    /* Khung hiển thị typewriter */
+    #final-text{
+      position:fixed; left:50%; top:50%; transform:translate(-40%,-40%) scale(.98);
+      max-width:min(92vw,920px); padding:10px 14px; border-radius:16px;
+      text-align:center; line-height:1.45; z-index:7;
+      opacity:0; transition:opacity .9s ease, transform .9s ease;
+      background:rgba(255, 0, 153, 0.944); backdrop-filter:blur(4px);
+      box-shadow:0 12px 40px rgba(0,0,0,.15);
+      color:#000000; font-size:clamp(14px,2.2vw,20px); font-weight:500;
+    }
+    #typewriter{
+      display:inline-block;
+      font-size:clamp(18px,2.4vw,24px); font-weight:700;
+      background:linear-gradient(90deg,#6a003a,#ff004f,#ff6b6b);
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      text-shadow:0 0 14px rgba(255,0,90,.25);
+      white-space:pre-wrap; /* giữ xuống dòng */
+      color:#000000
+    }
+    /* Con trỏ gõ nhấp nháy */
+    #typewriter::after{
+      content:"";
+      display:inline-block; width:10px; height:1.2em; margin-left:4px;
+      border-right:3px solid rgba(255,0,90,.9);
+      animation:blink .8s steps(1,end) infinite;
+      vertical-align:-3px;
+    }
+    @keyframes blink{ 50%{ border-right-color:transparent } }
+
+    /* Khi kích hoạt hiển thị ảnh + text */
+    #final-gallery.show .slot{ opacity:1; transform:translateY(0) scale(1) }
+    #final-gallery.show .slot1{ transition-delay:.00s }
+    #final-gallery.show .slot2{ transition-delay:.12s }
+    #final-gallery.show .slot3{ transition-delay:.24s }
+    #final-gallery.show .slot4{ transition-delay:.36s }
+    #final-gallery.show .slot5{ transition-delay:.48s }
+    #final-gallery.show .slot6{ transition-delay:.60s }
+
+    .show-text #final-text{ opacity:1; transform:translate(-50%,-50%) scale(1) }
+  </style>
+</head>
+<body>
+  <canvas id="stage" aria-label="Hoa hồng bay kết thành trái tim" role="img"></canvas>
+
+  <div id="start-screen">
+    <h2>🌹 Nhấn để bắt đầu 🌹</h2>
+    <button id="start-btn">Bật nhạc & Xem hoa</button>
+  </div>
+  <div class="hint">🌹 200 bông sẽ bay kết thành <b>trái tim</b> 💖</div>
+
+  <!-- 6 ảnh xuất hiện sau khi hoa kết xong – đổi src thành ảnh của bạn -->
+  <div id="final-gallery">
+    <div class="slot slot1"><img src="img1.jpg" alt="ảnh 1"></div>
+    <div class="slot slot2"><img src="img2.jpg" alt="ảnh 2"></div>
+    <div class="slot slot3"><img src="img3.jpg" alt="ảnh 3"></div>
+    <div class="slot slot4"><img src="img4.jpg" alt="ảnh 4"></div>
+    <div class="slot slot5"><img src="img5.jpg" alt="ảnh 5"></div>
+    <div class="slot slot6"><img src="img6.jpg" alt="ảnh 6"></div>
+  </div>
+
+  <!-- Typewriter text (hiện cùng ảnh) -->
+  <div id="final-text"><span id="typewriter"></span></div>
+
+  <audio id="bg-music" src="1.mp3" preload="auto" loop playsinline></audio>
+
+  <script>
+  const startBtn = document.getElementById('start-btn');
+  const startScreen = document.getElementById('start-screen');
+  const hint = document.querySelector('.hint');
+  const music = document.getElementById('bg-music');
+  const finalGallery = document.getElementById('final-gallery');
+  const finalTextBox = document.getElementById('final-text');
+  const typeEl = document.getElementById('typewriter');
+  let started = false;
+
+  async function startAll(){
+    startScreen.style.display='none';
+    hint.style.display='block';
+    try{
+      music.volume=0; await music.play();
+      let v=0; const fade=setInterval(()=>{ v=Math.min(1,v+0.05); music.volume=v; if(v>=1) clearInterval(fade); },150);
+    }catch(e){}
+    if(!started){ started = true; startRosesHeart(); }
+  }
+  startBtn.addEventListener('click', startAll);
+
+  function startRosesHeart(){
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+
+    let W=0,H=0,dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+    const TARGET={x:0,y:0}, TIE={x:0,y:0};
+
+    function resize(){
+      W=canvas.clientWidth=innerWidth;
+      H=canvas.clientHeight=innerHeight;
+      canvas.width=Math.floor(W*dpr);
+      canvas.height=Math.floor(H*dpr);
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      TARGET.x=W*0.5; TARGET.y=H*0.52;
+      TIE.x=W*0.5; TIE.y=H*0.80;
+    }
+    addEventListener('resize',resize,{passive:true}); resize();
+
+    const TAU=Math.PI*2, N=200;
+    const rand=(a,b)=>a+Math.random()*(b-a);
+
+    // Trái tim đảo ngược: mũi nhọn hướng xuống
+    function heartUnit(t){
+      const x=16*Math.pow(Math.sin(t),3);
+      const y=13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t);
+      return {x:x/16, y:-y/17};
+    }
+
+    function heartTargets(n){
+      const pts=[]; const base=Math.min(W,H)*0.34; const layers=7;
+      let perRing=18, added=0;
+      for(let ring=0; ring<layers && added<n; ring++){
+        const s=1.0-ring*0.11, count=Math.floor(perRing+ring*7);
+        for(let i=0;i<count && added<n;i++){
+          const t=i/count*TAU, p=heartUnit(t);
+          pts.push({ x:TARGET.x+p.x*base*s+rand(-3,3), y:TARGET.y+p.y*base*s*0.95+rand(-3,3), sway:rand(-0.3,0.3) });
+          added++;
+        }
+      }
+      while(pts.length<n){
+        const ang=rand(0,TAU), r=rand(0,base*0.18);
+        pts.push({ x:TARGET.x+Math.cos(ang)*r, y:TARGET.y+Math.sin(ang)*r*0.85, sway:rand(-0.3,0.3) });
+      }
+      return pts;
+    }
+    const targets=heartTargets(N);
+
+    function makeRose(i){
+      const side=Math.floor(rand(0,4)); let x,y;
+      if(side===0){x=-60;y=rand(0,H);} else if(side===1){x=W+60;y=rand(0,H);}
+      else if(side===2){x=rand(0,W);y=-60;} else {x=rand(0,W);y=H+60;}
+      const t=targets[i], size=rand(56,84);
+      return { x,y, vx:rand(-36,36), vy:rand(-36,36), rot:rand(0,TAU), vrot:rand(-0.35,0.35),
+               size, alpha:0, target:{x:t.x,y:t.y,sway:t.sway}, settled:false, settleTime:0 };
+    }
+    const roses=Array.from({length:N},(_,i)=>makeRose(i));
+
+    let allSettled=false, allSettledAt=0;
+
+    function update(r,dt,time){
+      if(!r.settled){
+        const dx=r.target.x-r.x, dy=r.target.y-r.y, dist=Math.hypot(dx,dy)+1e-6;
+        const ax=(dx/dist)*800, ay=(dy/dist)*800; // chỉnh tốc độ ở đây
+        r.vx+=ax*dt; r.vy+=ay*dt;
+        r.vx*=0.92; r.vy*=0.92;
+        r.vx+=Math.sin(time*0.6+r.target.sway)*6*dt;
+        r.vy+=Math.cos(time*0.5+r.target.sway)*4*dt;
+        r.x+=r.vx*dt; r.y+=r.vy*dt;
+        r.rot+=r.vrot*dt;
+        r.alpha=Math.min(1,r.alpha+dt*1.5);
+        if(dist<8 && Math.hypot(r.vx,r.vy)<10){ r.settled=true; r.settleTime=time; }
+      }else{
+        r.rot=Math.sin((time-r.settleTime)*0.8+r.target.sway)*0.15;
+      }
+    }
+
+    function drawStem(x0,y0,x1,y1,s){
+      ctx.strokeStyle='hsl(135,38%,28%)';
+      ctx.lineWidth=Math.max(1,s*0.06);
+      ctx.beginPath(); ctx.moveTo(x0,y0);
+      const cx=(x0+x1)/2+(x1-TIE.x)*0.08, cy=(y0+y1)/2+(TIE.y-y1)*0.18;
+      ctx.quadraticCurveTo(cx,cy,x1,y1); ctx.stroke();
+    }
+    function drawLeaf(x,y,ang,s){
+      ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+      const g=ctx.createLinearGradient(0,-s*0.2,s*1.0,s*0.2);
+      g.addColorStop(0,'hsl(135,50%,52%)'); g.addColorStop(1,'hsl(135,40%,35%)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.moveTo(0,0);
+      ctx.quadraticCurveTo(s*0.6,-s*0.25,s*1.0,0);
+      ctx.quadraticCurveTo(s*0.6,s*0.25,0,0);
+      ctx.fill(); ctx.strokeStyle='hsl(135,35%,25%)';
+      ctx.lineWidth=Math.max(1,s*0.02); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(s*0.95,0); ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawRose(r){
+      const {x,y,size,rot,alpha}=r;
+      ctx.save(); ctx.globalAlpha=alpha;
+      drawStem(TIE.x,TIE.y,x,y,size);
+      drawLeaf(x-size*0.2,y-size*0.6,-0.6,size*0.9);
+      drawLeaf(x+size*0.1,y-size*0.9,Math.PI-0.5,size*0.8);
+      ctx.translate(x,y); ctx.rotate(rot); ctx.scale(1,-1);
+      const petal=(r0,a,tight=1)=>{
+        ctx.save(); ctx.rotate(a);
+        const grad=ctx.createRadialGradient(0,0,0,0,0,r0);
+        grad.addColorStop(0,'hsl(0,80%,72%)'); grad.addColorStop(1,'hsl(0,85%,48%)');
+        ctx.fillStyle=grad; ctx.beginPath(); ctx.moveTo(0,0);
+        ctx.quadraticCurveTo(r0*0.9,-r0*0.5*tight,r0*0.85,0);
+        ctx.quadraticCurveTo(r0*0.9,r0*0.5*tight,0,0);
+        ctx.fill(); ctx.restore();
+      };
+      for(let i=0;i<7;i++) petal(size*0.98,i*(TAU/7));
+      for(let i=0;i<5;i++) petal(size*0.72,i*(TAU/5)+0.25,0.8);
+      for(let i=0;i<3;i++) petal(size*0.48,i*(TAU/3)+0.4,0.6);
+      ctx.fillStyle='hsl(0,85%,45%)'; ctx.beginPath(); ctx.arc(0,0,size*0.25,0,TAU); ctx.fill();
+      ctx.restore();
+    }
+
+    function drawHeartGlow(time){
+      const base=Math.min(W,H)*0.36;
+      ctx.save();
+      const pulse=(Math.sin(time*3)+1)/2;
+      ctx.globalAlpha=0.4+0.35*pulse;
+      ctx.shadowColor='rgba(255,50,100,1)';
+      ctx.shadowBlur=40+60*pulse;
+      ctx.lineWidth=10;
+      ctx.beginPath();
+      for(let i=0;i<=260;i++){
+        const t=i/260*TAU, u=heartUnit(t);
+        const x=TARGET.x+u.x*base, y=TARGET.y+u.y*base*0.95;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.closePath(); ctx.strokeStyle='rgba(255,70,120,1)'; ctx.stroke(); ctx.restore();
+    }
+
+    // --- TYPEWRITER: nội dung sẽ gõ ra ---
+    const message = [
+      "🌸 Chúc em ngày Phụ Nữ Việt Nam 20/10! 🌸",
+      "Nhân ngày đặc biệt này, chúc em luôn xinh đẹp, rạng rỡ và hạnh phúc trong mọi khoảnh khắc của cuộc sống.",
+      "Mong rằng nụ cười của em luôn nở trên môi, may mắn và thành công sẽ luôn đồng hành cùng em.",
+      "Cảm ơn vì những điều tốt đẹp em mang đến cho anh — không chỉ hôm nay mà là mỗi ngày trong năm",
+      "----  hẹ hẹ :>>"
+    ].join("\n");
+
+    function runTypewriter(text, speedMs=18){
+      // hiển thị khung
+      document.body.classList.add('show-text');
+      let i = 0;
+      typeEl.textContent = "";
+      const timer = setInterval(()=>{
+        if(i >= text.length){ clearInterval(timer); return; }
+        const ch = text[i++];
+        // chuyển \n thành xuống dòng
+        if(ch === "\n"){ typeEl.innerHTML += "<br>"; }
+        else { typeEl.textContent += ch; }
+      }, speedMs);
+    }
+
+    let last=performance.now();
+    function loop(now){
+      const dt=Math.min(0.033,(now-last)/1000); last=now;
+      const t=now/1000;
+      for(const r of roses) update(r,dt,t);
+
+      if(!allSettled){
+        allSettled=roses.every(r=>r.settled);
+        if(allSettled){
+          allSettledAt=t;
+          // Hiện bộ ảnh + chữ chúc mừng (typewriter)
+          finalGallery.style.opacity='1';
+          finalGallery.classList.add('show');
+          finalTextBox.style.opacity='1';
+          finalTextBox.style.transform='translate(-50%,-50%) scale(1)';
+          runTypewriter(message, 18); // tốc độ gõ nhanh
+        }
+      }
+
+      ctx.clearRect(0,0,W,H);
+      const sorted=roses.slice().sort((a,b)=>a.y-b.y);
+      for(const r of sorted) drawRose(r);
+      drawRibbon();
+      if(allSettled) drawHeartGlow(t-allSettledAt+0.001);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    function drawRibbon(){
+      const w=90,h=26;
+      ctx.save(); ctx.translate(TIE.x,TIE.y);
+      ctx.fillStyle='hsl(0,80%,55%)';
+      ctx.beginPath();
+      ctx.moveTo(-w*0.5,0);
+      ctx.quadraticCurveTo(-w*0.25,-h,0,-h*0.3);
+      ctx.quadraticCurveTo(w*0.25,-h,w*0.5,0);
+      ctx.quadraticCurveTo(w*0.25,h,0,h*0.3);
+      ctx.quadraticCurveTo(-w*0.25,h,-w*0.5,0);
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+  }
+  </script>
+</body>
+</html>

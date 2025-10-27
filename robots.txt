@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://kienek20.github.io/voyeu.github.io/sitemap.xml
